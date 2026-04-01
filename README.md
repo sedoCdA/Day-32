@@ -1,6 +1,6 @@
 # Day 32 Decision Trees & Random Forest
 
-**Week 6 | Machine Learning & AI**
+**Week 6 - Day 32 - AM/PM**
 
 ---
 
@@ -9,17 +9,6 @@
 A complete implementation of a loan approval system using Decision Trees, Random Forest, and Extra Trees. Covers model comparison, feature importance (MDI vs Permutation), hyperparameter tuning with RandomizedSearchCV, bias-variance analysis, and a non-technical infographic.
 
 ---
-
-## Structure
-
-```
-D32_DT_RandomForest.ipynb   - Main Colab notebook
-extra_trees_comparison.md   - Part B findings
-```
-
----
-
-## Parts Completed
 
 ### Part A Loan Approval System (40%)
 
@@ -51,8 +40,7 @@ extra_trees_comparison.md   - Part B findings
 
 ---
 
-### Part C Interview Ready (20%)
-
+### Part C 
 **Q1 Bias-Variance Tradeoff**
 
 A Decision Tree with unconstrained depth has low bias but high variance - tiny changes in training data produce completely different trees. Bagging (Bootstrap Aggregating) trains B trees on different bootstrap samples and averages their predictions. Since errors are partially decorrelated, ensemble variance ≈ `ρσ² + (1-ρ)σ²/B` where ρ is the inter-tree correlation. Random Forest further reduces ρ via random feature selection at each split, achieving a significantly better bias-variance balance.
@@ -67,7 +55,7 @@ Not a problem. `max_depth=3` is a strong regulariser - shallow trees cannot memo
 
 ---
 
-### Part D AI-Augmented Infographic (10%)
+### Part D 
 
 Multi-panel matplotlib infographic covering:
 - Performance bar chart (Accuracy, F1, ROC-AUC) for all three models
@@ -76,16 +64,6 @@ Multi-panel matplotlib infographic covering:
 - Interpretability scale bar chart
 
 Evaluation: Noted where the infographic oversimplifies (e.g., RF's missing-value handling in sklearn requires explicit imputation; LR's probabilistic output should be calibrated). Corrections applied inline.
-
----
-
-## How to Run
-
-1. Open `D32_DT_RandomForest.ipynb` in Google Colab
-2. `Runtime > Run All`
-3. All plots and `extra_trees_comparison.md` are generated automatically
-
-No additional data files needed - dataset is synthetically generated in the notebook.
 
 ---
 
@@ -100,7 +78,51 @@ No additional data files needed - dataset is synthetically generated in the note
 ---
 
 ## Recommendation
-
 Deploy Random Forest as the primary prediction engine (higher accuracy, robust to overfitting) and maintain the Decision Tree (`max_depth=4`) as a regulatory surrogate explainer. When a regulator or customer requests justification for a loan decision, the shallow tree's human-readable rules serve as a compliant explanation layer. This dual-model architecture satisfies both the performance requirement and fair-lending interpretability mandates.
 
 ---
+# Day 32 PM Session: Decision Trees & Random Forest Applied
+This documentation provides the conceptual analysis and technical justifications for the Day 32 PM Case Study on insurance fraud detection.
+
+---
+
+## Part A: Deployment Strategy & Business Logic
+**Scenario:** Predicting insurance fraud where a missed fraudster (False Negative) costs 10x more than a false alarm (False Positive).
+
+### Recommendation
+**Automated Scoring:** The **Random Forest** (RF) model is the superior choice for the primary engine By tuning the model specifically to maximize **Recall**, we ensure the bank captures the highest percentage of fraudulent claims, directly addressing the high cost of False Negatives.
+**Regulatory Compliance:** To meet requirements for explainability, we utilize the **Decision Tree** (DT) as a "Proxy Model" While the RF makes the high-accuracy decision, the DT provides a visual, rule-based map (e.g., "If claim > $5000 and Emergency = Yes") that adjusters can use to justify investigations to regulators.
+
+---
+
+## Part B: Ensemble Methods (Bagging vs. Boosting)
+**Conceptual Comparison:**
+**Bagging (Random Forest):** Operates by building many trees independently in parallel. Each tree gets a random subset of data (bootstrap sampling). The final prediction is an average, which primarily serves to reduce **variance** and overfitting.
+**Boosting:** Operates sequentially. Each new tree is trained specifically to predict the errors (residuals) made by the previous trees. This process focuses on reducing **bias**, turning a collection of weak models into one powerful learner.
+
+---
+
+## Part C
+### Q1: Efficiency and Scaling
+**Question:** If 1000 trees yield the same accuracy as 100 trees, which do you deploy?
+**Answer:** Deploy the **100-tree model**.
+**Computational Overhead:** 1000 trees require 10x the memory and processing power to train.
+* **Latency:** In production, every additional tree adds time to the prediction "forward pass."For real-time insurance claims, lower latency is critical.
+* **Complexity:** Adding 900 trees for 0% gain introduces unnecessary technical debt and infrastructure costs.
+
+### Q3: Debugging Feature Importance
+**Question:** Why does the feature importance ranking change significantly between two identical runs?
+**Answer:** This is due to **stochasticity** and **instability**:
+**Double Randomness:** Random Forests randomly select both rows (bootstrapping) and columns (feature selection) for every split. Without a fixed `random_state`, these selections change every time.
+**Model Convergence:** With only 10 trees (as seen in the snippet), the model hasn't built enough "consensus". A forest typically needs more estimators (e.g., 100+) for feature importance scores to stabilize and become reproducible.
+
+---
+
+## Part D: Out-of-Bag (OOB) Error
+
+### Non-Technical Analogy
+Imagine a teacher preparing a class for a final exam using a massive bank of 1,000 flashcards For every practice quiz, the teacher randomly hides 300 cards and only lets the students study the other 700 The **OOB Error** is the score the students get when they are quizzed specifically on those 300 hidden cards they never saw during study time.
+
+### Technical Validation
+**Proxy for Test Error:** OOB error is an excellent proxy for Test Error because it validates the model on "unseen" data without requiring a separate validation set.
+**Discrepancies:** OOB error may differ significantly from Test Error if the dataset is so small that the "left-out" data isn't representative, or if there is a temporal shift (e.g., training on 2024 data to predict 2026 outcomes).
